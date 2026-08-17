@@ -10,7 +10,7 @@ HEADERS = {
 }
 
 # 過去90日の注文を集計
-since = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def get_orders():
     url = f"https://{STORE}/admin/api/2024-01/orders.json?status=any&created_at_min={since}&limit=250"
@@ -33,7 +33,7 @@ def update_metafield(product_id, count):
     data = {
         "metafield": {
             "namespace": "custom",
-            "key": "buy_count_90days",
+            "key": "buy_count_365days",
             "value": str(count),
             "type": "number_integer"
         }
