@@ -9,7 +9,7 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d")
+since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def get_orders():
     url = f"https://{STORE}/admin/api/2025-01/graphql.json"
