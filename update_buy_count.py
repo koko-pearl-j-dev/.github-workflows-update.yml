@@ -15,14 +15,14 @@ def get_orders():
     url = f"https://{STORE}/admin/api/2025-01/graphql.json"
     counts = {}
     cursor = None
+    has_next = True
 
-    while True:
+    while has_next:
         after = f', after: "{cursor}"' if cursor else ""
         query = f"""
         {{
           orders(first: 250, query: "created_at:>{since} status:any"{after}) {{
             edges {{
-              cursor
               node {{
                 lineItems(first: 50) {{
                   edges {{
@@ -34,7 +34,7 @@ def get_orders():
                 }}
               }}
             }}
-            pageInfo {{ hasNextPage }}
+            pageInfo {{ hasNextPage endCursor }}
           }}
         }}
         """
@@ -45,15 +45,15 @@ def get_orders():
         edges = orders.get("edges", [])
 
         for edge in edges:
-            cursor = edge["cursor"]
             for item in edge["node"]["lineItems"]["edges"]:
                 node = item["node"]
                 if node["product"]:
                     pid = node["product"]["id"].split("/")[-1]
                     counts[pid] = counts.get(pid, 0) + node["quantity"]
 
-        if not orders.get("pageInfo", {}).get("hasNextPage"):
-            break
+        page_info = orders.get("pageInfo", {})
+        has_next = page_info.get("hasNextPage", False)
+        cursor = page_info.get("endCursor")
 
     return counts
 
