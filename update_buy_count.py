@@ -31,6 +31,7 @@ def get_orders():
                     node {{
                       product {{ id }}
                       quantity
+                      title
                     }}
                   }}
                 }}
@@ -53,6 +54,8 @@ def get_orders():
                 if node["product"]:
                     pid = node["product"]["id"].split("/")[-1]
                     counts[pid] = counts.get(pid, 0) + node["quantity"]
+                else:
+                    print(f"Null product: quantity={node['quantity']}, title={node.get('title', 'unknown')}")
 
         page_info = orders.get("pageInfo", {})
         has_next = page_info.get("hasNextPage", False)
