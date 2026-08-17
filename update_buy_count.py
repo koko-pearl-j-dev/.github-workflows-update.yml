@@ -17,6 +17,7 @@ def get_orders():
     counts = {}
     cursor = None
     has_next = True
+    total_orders = 0
 
     while has_next:
         after = f', after: "{cursor}"' if cursor else ""
@@ -44,6 +45,7 @@ def get_orders():
 
         orders = data.get("data", {}).get("orders", {})
         edges = orders.get("edges", [])
+        total_orders += len(edges)
 
         for edge in edges:
             for item in edge["node"]["lineItems"]["edges"]:
@@ -56,6 +58,7 @@ def get_orders():
         has_next = page_info.get("hasNextPage", False)
         cursor = page_info.get("endCursor")
 
+    print(f"Total orders fetched: {total_orders}")
     return counts
 
 def update_metafield(product_id, count):
