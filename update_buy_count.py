@@ -18,6 +18,8 @@ def get_orders():
     cursor = None
     has_next = True
     total_orders = 0
+    first_order_id = None
+    last_order_id = None
 
     while has_next:
         after = f', after: "{cursor}"' if cursor else ""
@@ -26,6 +28,7 @@ def get_orders():
           orders(first: 250, query: "created_at:>{since} status:any"{after}) {{
             edges {{
               node {{
+                id
                 lineItems(first: 50) {{
                   edges {{
                     node {{
@@ -49,6 +52,11 @@ def get_orders():
         total_orders += len(edges)
 
         for edge in edges:
+            order_id = edge["node"]["id"]
+            if first_order_id is None:
+                first_order_id = order_id
+            last_order_id = order_id
+
             for item in edge["node"]["lineItems"]["edges"]:
                 node = item["node"]
                 if node["product"]:
@@ -62,6 +70,8 @@ def get_orders():
         cursor = page_info.get("endCursor")
 
     print(f"Total orders fetched: {total_orders}")
+    print(f"First order: {first_order_id}")
+    print(f"Last order: {last_order_id}")
     return counts
 
 def update_metafield(product_id, count):
