@@ -9,27 +9,56 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-# 過去90日の注文を集計
-since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%dT%H:%M:%SZ")
+since = (datetime.now(timezone.utc) - timedelta(days=365)).strftime("%Y-%m-%d")
 
 def get_orders():
-    url = f"https://{STORE}/admin/api/2024-01/orders.json?status=any&created_at_min={since}&limit=250"
+    url = f"https://{STORE}/admin/api/2025-01/graphql.json"
     counts = {}
-    while url:
-        res = requests.get(url, headers=HEADERS).json()
-        for order in res.get("orders", []):
-            for item in order.get("line_items", []):
-                pid = str(item["product_id"])
-                counts[pid] = counts.get(pid, 0) + item["quantity"]
-        link = requests.get(url, headers=HEADERS).headers.get("Link", "")
-        url = None
-        for part in link.split(","):
-            if 'rel="next"' in part:
-                url = part.split(";")[0].strip().strip("<>")
+    cursor = None
+
+    while True:
+        after = f', after: "{cursor}"' if cursor else ""
+        query = f"""
+        {{
+          orders(first: 250, query: "created_at:>{since}"{after}) {{
+            edges {{
+              cursor
+              node {{
+                lineItems(first: 50) {{
+                  edges {{
+                    node {{
+                      product {{ id }}
+                      quantity
+                    }}
+                  }}
+                }}
+              }}
+            }}
+            pageInfo {{ hasNextPage }}
+          }}
+        }}
+        """
+        res = requests.post(url, json={"query": query}, headers=HEADERS)
+        data = res.json()
+
+        orders = data.get("data", {}).get("orders", {})
+        edges = orders.get("edges", [])
+
+        for edge in edges:
+            cursor = edge["cursor"]
+            for item in edge["node"]["lineItems"]["edges"]:
+                node = item["node"]
+                if node["product"]:
+                    pid = node["product"]["id"].split("/")[-1]
+                    counts[pid] = counts.get(pid, 0) + node["quantity"]
+
+        if not orders.get("pageInfo", {}).get("hasNextPage"):
+            break
+
     return counts
 
 def update_metafield(product_id, count):
-    url = f"https://{STORE}/admin/api/2024-01/products/{product_id}/metafields.json"
+    url = f"https://{STORE}/admin/api/2025-01/products/{product_id}/metafields.json"
     data = {
         "metafield": {
             "namespace": "custom",
