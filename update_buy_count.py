@@ -22,7 +22,7 @@ def get_orders():
         after = f', after: "{cursor}"' if cursor else ""
         query = f"""
         {{
-          orders(first: 250, query: "created_at:>{since} status:any"{after}) {{
+        　orders(first: 250, query: "created_at:>{since}"{after}) {{
             edges {{
               node {{
                 lineItems(first: 50) {{
