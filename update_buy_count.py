@@ -42,8 +42,23 @@ def get_orders():
         """
         res = requests.post(url, json={"query": query}, headers=HEADERS)
         data = res.json()
-        print(f"API response: {data}")
-        break
+
+        orders = data.get("data", {}).get("orders", {})
+        edges = orders.get("edges", [])
+        total_orders += len(edges)
+
+        for edge in edges:
+            line_items = edge["node"]["lineItems"]["edges"]
+            for item in line_items:
+                product = item["node"].get("product")
+                if product:
+                    product_id = product["id"].split("/")[-1]
+                    quantity = item["node"]["quantity"]
+                    counts[product_id] = counts.get(product_id, 0) + quantity
+
+        page_info = orders.get("pageInfo", {})
+        has_next = page_info.get("hasNextPage", False)
+        cursor = page_info.get("endCursor")
 
     print(f"Total orders fetched: {total_orders}")
     return counts
