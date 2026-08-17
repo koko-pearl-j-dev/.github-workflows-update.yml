@@ -58,16 +58,29 @@ def get_orders():
     return counts
 
 def update_metafield(product_id, count):
-    url = f"https://{STORE}/admin/api/2025-01/products/{product_id}/metafields.json"
-    data = {
-        "metafield": {
+    url = f"https://{STORE}/admin/api/2025-01/graphql.json"
+    query = """
+    mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields { key value }
+        userErrors { field message }
+      }
+    }
+    """
+    variables = {
+        "metafields": [{
+            "ownerId": f"gid://shopify/Product/{product_id}",
             "namespace": "custom",
             "key": "buy_count_365days",
             "value": str(count),
             "type": "number_integer"
-        }
+        }]
     }
-    requests.post(url, json=data, headers=HEADERS)
+    res = requests.post(url, json={"query": query, "variables": variables}, headers=HEADERS)
+    data = res.json()
+    errors = data.get("data", {}).get("metafieldsSet", {}).get("userErrors", [])
+    if errors:
+        print(f"Error for {product_id}: {errors}")
 
 counts = get_orders()
 for product_id, count in counts.items():
